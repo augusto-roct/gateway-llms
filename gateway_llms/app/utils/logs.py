@@ -19,3 +19,7 @@ class LogApplication:
         print(self.message + f"Cookies: {cookies}")
         print(self.message + f"Body: {body}")
         print(self.message + f"Query Params: {query_params}")
+
+    def log_info(self, level: str, message: str):
+
+        print(self.message + f"{level}, Status: {message}")
