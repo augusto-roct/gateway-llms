@@ -8,5 +8,4 @@ app = FastAPI(
     version=__version__
 )
 
-# app.add_route(path="/", route=index.router)
 app.include_router(index.router, prefix="")
