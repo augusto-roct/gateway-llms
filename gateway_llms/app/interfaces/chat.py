@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel, Field
 
 
@@ -26,7 +27,7 @@ class ChatLLMCompletion(BaseModel):
         None,
         description="Modelo que será utilizado na conversa"
     )
-    messages: ChatMessages = Field(
+    messages: List[ChatMessages] = Field(
         None,
         description="Histórico de conversa com o modelo"
     )
