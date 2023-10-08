@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Response
-from openai import ChatLLMCompletion
+from gateway_llms.app.interfaces.chat import ChatLLMCompletion
 from gateway_llms.app.controllers.chat import get_chat_completion
 
 from gateway_llms.app.utils.logs import LogApplication
@@ -19,5 +19,5 @@ async def chat_completion(
 ):
     log_user = LogApplication(request, await request.body())
 
-    data = get_chat_completion(chat_llm_completion, log_user)
+    data = await get_chat_completion(chat_llm_completion, log_user)
     return data
