@@ -2,9 +2,10 @@ import numpy as np
 
 from gateway_llms.app.interfaces.chat import ChatLLMCompletion
 from gateway_llms.app.modules.chat.embeddings import get_embeddings
-from gateway_llms.app.utils.logs import LogApplication
+from gateway_llms.app.utils.logs import LogApplication, log_function
 
 
+@log_function
 async def get_similarity_messages_historical(
     chat_llm_completion: ChatLLMCompletion,
     log_user: LogApplication

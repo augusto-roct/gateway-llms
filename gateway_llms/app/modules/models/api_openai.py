@@ -3,7 +3,7 @@ from typing import List
 from fastapi.concurrency import run_in_threadpool
 import openai
 
-from gateway_llms.app.utils.logs import LogApplication
+from gateway_llms.app.utils.logs import LogApplication, log_function
 
 
 openai.organization = os.getenv("OPENAI_ORGANIZATION")
@@ -20,6 +20,7 @@ async def call_openai_api(func, args: dict):
     return response
 
 
+@log_function
 async def openai_chat_completion(
     model: str,
     messages: List[dict],

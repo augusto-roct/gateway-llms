@@ -1,5 +1,28 @@
+import time
 import uuid
 from fastapi import Request
+
+
+def log_function(func):
+    async def async_functions(*args, **kwargs):
+        start = time.time()
+
+        log_application = args[-1]
+        if isinstance(log_application, LogApplication):
+            log_application.log_info("INFO", f"Call {func.__name__}")
+
+        result = await func(*args, **kwargs)
+
+        if isinstance(log_application, LogApplication):
+            finish = time.time() - start
+            log_application.log_info(
+                "INFO",
+                f"Return {func.__name__}, time execution: {finish: .3f} seconds"
+            )
+
+        return result
+
+    return async_functions
 
 
 class LogApplication:

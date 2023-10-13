@@ -3,9 +3,10 @@ from gateway_llms.app.modules.chat.similarity import (
     get_similarity_messages_historical
 )
 from gateway_llms.app.modules.models.api_openai import openai_chat_completion
-from gateway_llms.app.utils.logs import LogApplication
+from gateway_llms.app.utils.logs import LogApplication, log_function
 
 
+@log_function
 async def chat_completion(
     chat_llm_completion: ChatLLMCompletion,
     log_user: LogApplication
