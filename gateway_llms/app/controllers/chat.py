@@ -16,6 +16,10 @@ async def chat_completion(
         log_user
     )
 
+    if chat_llm_completion.parameters:
+        for key in chat_llm_completion.parameters:
+            chat_llm_completion.text.replace("{{" + key + "}}", chat_llm_completion.parameters.get(key))
+
     messages_similarity.append({
         "role": "user",
         "content": chat_llm_completion.text

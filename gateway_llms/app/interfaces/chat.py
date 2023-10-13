@@ -31,3 +31,7 @@ class ChatLLMCompletion(BaseModel):
         None,
         description="Histórico de conversa com o modelo"
     )
+    parameters: dict = Field(
+        None,
+        description="Parâmetros utilizados no prompt"
+    )
