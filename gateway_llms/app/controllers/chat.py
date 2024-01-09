@@ -19,6 +19,8 @@ async def chat_completion(
 
         for index in range(len(messages_similarity)):
             messages_similarity[index] = messages_similarity[index].dict()
+    else:
+        chat_llm_completion.messages = []
 
     # else:
     #     chat_llm_completion.messages = messages_similarity
