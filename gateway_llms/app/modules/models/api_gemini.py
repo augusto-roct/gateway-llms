@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+from starlette.concurrency import run_in_threadpool
 
 from gateway_llms.app.utils.logs import LogApplication, log_function
 
@@ -37,3 +38,17 @@ async def gemini_chat_completion(
     )
 
     return response.text
+
+
+@log_function
+async def gemini_embeddings(
+    text: str,
+    log_user: LogApplication
+):
+    response = await run_in_threadpool(
+        genai.embed_content,
+        'models/embedding-001',
+        text
+    )
+
+    return response.get("embedding")

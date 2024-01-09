@@ -20,13 +20,14 @@ async def chat_completion(
         for index in range(len(messages_similarity)):
             messages_similarity[index] = messages_similarity[index].dict()
 
-    else:
-        chat_llm_completion.messages = messages_similarity
-    # if chat_llm_completion.messages and len(chat_llm_completion.messages) > 0:
-    #     messages_similarity = await get_similarity_messages_historical(
-    #         chat_llm_completion,
-    #         log_user
-    #     )
+    # else:
+    #     chat_llm_completion.messages = messages_similarity
+
+    if len(messages_similarity) > 0:
+        messages_similarity = await get_similarity_messages_historical(
+            chat_llm_completion,
+            log_user
+        )
 
     # if chat_llm_completion.parameters:
     #     for key in chat_llm_completion.parameters:
