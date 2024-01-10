@@ -1,4 +1,4 @@
-from typing import List
+from typing import Iterable, List
 from pydantic import BaseModel, Field
 
 
@@ -10,6 +10,27 @@ class ChatMessages(BaseModel):
     content: str = Field(
         ...,
         description="Conteúdo da mensagem"
+    )
+
+
+class ChatConfig(BaseModel):
+    candidate_count: int = Field(
+        1
+    )
+    stop_sequences: Iterable[str] = Field(
+        None
+    )
+    max_output_tokens: int = Field(
+        None
+    )
+    temperature: float = Field(
+        None
+    )
+    top_p: float = Field(
+        None
+    )
+    top_k: int = Field(
+        None
     )
 
 
@@ -34,4 +55,8 @@ class ChatLLMCompletion(BaseModel):
     parameters: dict = Field(
         None,
         description="Parâmetros utilizados no prompt"
+    )
+    configuration: ChatConfig = Field(
+        None,
+        description="Configuração que será utilizada pelo modelo"
     )

@@ -26,6 +26,7 @@ async def gemini_chat_completion(
     message: str,
     system: str,
     history: list,
+    config: dict,
     log_user: LogApplication
 ):
     model = genai.GenerativeModel('gemini-pro')
@@ -38,7 +39,8 @@ async def gemini_chat_completion(
     chat = model.start_chat(history=chat_history)
 
     response = await chat.send_message_async(
-        message
+        message,
+        generation_config=config
     )
 
     return response.text
