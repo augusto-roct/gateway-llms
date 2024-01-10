@@ -11,5 +11,5 @@ async def root(
     request: Request,
     response: Response
 ):
-    log_user = LogApplication(request, await request.body())
+    LogApplication(request, await request.body())
     return "API Gateway-llms is alive"
