@@ -24,10 +24,14 @@ async def transform_history(history: list):
 @log_function
 async def gemini_chat_completion(
     message: str,
+    system: str,
     history: list,
     log_user: LogApplication
 ):
     model = genai.GenerativeModel('gemini-pro')
+
+    history.insert(0, {"role": "user", "content": "Quem é você?"})
+    history.insert(1, {"role": "assistant", "content": system})
 
     chat_history = await transform_history(history)
 

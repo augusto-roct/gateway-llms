@@ -22,22 +22,20 @@ async def chat_completion(
     else:
         chat_llm_completion.messages = []
 
-    # else:
-    #     chat_llm_completion.messages = messages_similarity
-
     if len(messages_similarity) > 0:
         messages_similarity = await get_similarity_messages_historical(
             chat_llm_completion,
             log_user
         )
 
-    # if chat_llm_completion.parameters:
-    #     for key in chat_llm_completion.parameters:
-    #         chat_llm_completion.text.replace(
-    #             "{{" + key + "}}", chat_llm_completion.parameters.get(key))
+    if chat_llm_completion.parameters:
+        for key in chat_llm_completion.parameters:
+            chat_llm_completion.text.replace(
+                "{{" + key + "}}", chat_llm_completion.parameters.get(key))
 
     content = await gemini_chat_completion(
         chat_llm_completion.text,
+        chat_llm_completion.system,
         messages_similarity,
         log_user
     )
