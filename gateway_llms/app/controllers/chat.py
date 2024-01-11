@@ -2,7 +2,6 @@ from gateway_llms.app.interfaces.chat import ChatLLMCompletion, ChatMessages
 from gateway_llms.app.modules.chat.similarity import (
     get_similarity_messages_historical
 )
-# from gateway_llms.app.modules.models.api_openai import openai_chat_completion
 from gateway_llms.app.modules.models.api_gemini import gemini_chat_completion
 from gateway_llms.app.utils.logs import LogApplication, log_function
 
