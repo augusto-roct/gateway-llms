@@ -13,12 +13,7 @@ async def get_similarity_messages_historical(
     list_index_messages = []
     messages_assistant = []
 
-    # index_system = 0
-
     for index, message in enumerate(chat_llm_completion.messages):
-        # if message.get('role') == "system":
-        #     index_system = index
-
         if message.get('role') == "assistant":
             list_index_messages.append(index)
             messages_assistant.append(message.get('content'))
@@ -35,12 +30,6 @@ async def get_similarity_messages_historical(
     del embeddings_user
 
     messages_similarity = []
-
-    # if chat_llm_completion.messages[index_system].role == "system":
-    #     messages_similarity.append({
-    #         "role": "system",
-    #         "content": chat_llm_completion.messages[index_system].content
-    #     })
 
     for index in sort_similarity[0]:
         messages_similarity.append({
