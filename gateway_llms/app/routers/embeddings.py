@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, File, UploadFile
+from gateway_llms.app.controllers.rag import document_to_embeddings
 from gateway_llms.app.interfaces.embeddings import TextEmbedding
 from gateway_llms.app.modules.chat.embeddings import get_embeddings
 
@@ -24,3 +25,19 @@ async def text_to_embedding(
     data = {"data": list(data[0])}
 
     return data
+
+
+@router.post(
+    path="/store",
+    description="Transforme o seus documentos em vetores de indices"
+)
+async def documents_to_embeddings(
+    request: Request,
+    response: Response,
+    file: UploadFile = File(...)
+):
+    log_user = LogApplication(request, request.body())
+
+    await document_to_embeddings(file, log_user)
+
+    return {"message": "Os vetores de indices forma salvos na aplicação"}
