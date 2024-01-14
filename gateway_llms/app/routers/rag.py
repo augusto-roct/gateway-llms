@@ -1,11 +1,27 @@
 from fastapi import APIRouter, Request, Response, File, UploadFile
-from gateway_llms.app.controllers.rag import document_to_embeddings, storage_to_query
-from gateway_llms.app.interfaces.rag import RagQuery
+from gateway_llms.app.controllers.rag import document_to_embeddings, save_file, storage_to_query
+from gateway_llms.app.interfaces.rag import RagDocument, RagQuery
 
 from gateway_llms.app.utils.logs import LogApplication
 
 
 router = APIRouter()
+
+
+@router.post(
+    path="/upload",
+    description="Salve os documentos dentro da aplicação"
+)
+async def upload_document(
+    request: Request,
+    response: Response,
+    file: UploadFile = File(...),
+):
+    log_user = LogApplication(request, request.body())
+
+    save_file(file, log_user)
+
+    return {"message": "Os vetores de indices forma salvos na aplicação"}
 
 
 @router.post(
@@ -15,11 +31,11 @@ router = APIRouter()
 async def documents_to_embeddings(
     request: Request,
     response: Response,
-    file: UploadFile = File(...)
+    rag_document: RagDocument
 ):
-    log_user = LogApplication(request, request.body())
+    log_user = LogApplication(request, await request.body())
 
-    await document_to_embeddings(file, log_user)
+    await document_to_embeddings(rag_document.name, rag_document.config, log_user)
 
     return {"message": "Os vetores de indices forma salvos na aplicação"}
 
@@ -35,6 +51,6 @@ async def response_query(
 ):
     log_user = LogApplication(request, await request.body())
 
-    data = await storage_to_query(rag_query.text, rag_query.document_name, log_user)
+    data = await storage_to_query(rag_query, log_user)
 
     return data

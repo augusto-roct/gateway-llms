@@ -1,5 +1,29 @@
 from pydantic import BaseModel, Field
 
+from gateway_llms.app.interfaces.chat import ChatConfig
+
+
+class RagConfig(BaseModel):
+    chunk_size: int = Field(
+        None,
+        description="Tamanho do segmento de cada vetor de indices"
+    )
+    chunk_overlap: int = Field(
+        None,
+        description="Tamanho da sobreposição no segmento"
+    )
+
+
+class RagDocument(BaseModel):
+    name: str = Field(
+        None,
+        description="Nome do documento que será transformado em vetores de indices"
+    )
+    config: RagConfig = Field(
+        None,
+        description="Configuração que será utilizada pelo modelo"
+    )
+
 
 class RagQuery(BaseModel):
     text: str = Field(
@@ -9,4 +33,13 @@ class RagQuery(BaseModel):
     document_name: str = Field(
         ...,
         description="O nome do documento que será utilizado como contexto para conversa"
+    )
+    system_prompt: str = Field(
+        None,
+        description="Prompt utilizado pelo sistema para definir o "
+        "comportamento do modelo"
+    )
+    config: ChatConfig = Field(
+        None,
+        description="Configuração que será utilizada pelo modelo"
     )

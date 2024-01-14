@@ -56,7 +56,7 @@ class ChatLLMCompletion(BaseModel):
         None,
         description="Parâmetros utilizados no prompt"
     )
-    configuration: ChatConfig = Field(
+    config: ChatConfig = Field(
         None,
         description="Configuração que será utilizada pelo modelo"
     )
