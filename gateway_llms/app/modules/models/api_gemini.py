@@ -4,28 +4,19 @@ import google.generativeai as genai
 from llama_index import ServiceContext
 from llama_index.llms import Gemini
 from llama_index.embeddings import GooglePaLMEmbedding
+from gateway_llms.app.interfaces.chat import ChatConfig
+from gateway_llms.app.interfaces.rag import RagConfig
 
 from gateway_llms.app.utils.logs import LogApplication, log_function
 
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-model_name = "models/embedding-gecko-001"
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
-gemini = Gemini(GOOGLE_API_KEY)
-embed_model = GooglePaLMEmbedding(
-    model_name=model_name,
-    api_key=GOOGLE_API_KEY
-)
-service_context = ServiceContext.from_defaults(
-    llm=gemini,
-    embed_model=embed_model
-)
-
 
 @log_function
-async def transform_history(history: list):
+async def transform_history(history: list, log_user: LogApplication):
     for message in history:
         message.update({"parts": [{"text": message.get("content")}]})
         del message["content"]
@@ -73,3 +64,40 @@ async def gemini_embeddings(
     )
 
     return response.get("embedding")
+
+
+@log_function
+def get_service_context(
+    system_prompt: str | None,
+    config: RagConfig | ChatConfig,
+    log_user: LogApplication
+):
+    model_name = "models/embedding-gecko-001"
+
+    if isinstance(config, ChatConfig):
+        generation_config = config.dict()
+        service_config = {}
+    else:
+        generation_config = {"temperature": 0.1}
+        service_config = config.dict()
+
+    gemini = Gemini(
+        GOOGLE_API_KEY,
+        temperature=generation_config.get("temperature"),
+        max_tokens=None,
+        generation_config=generation_config
+    )
+    embed_model = GooglePaLMEmbedding(
+        model_name=model_name,
+        api_key=GOOGLE_API_KEY
+    )
+
+    service_context = ServiceContext.from_defaults(
+        llm=gemini,
+        embed_model=embed_model,
+        system_prompt=system_prompt,
+        chunk_size=service_config.get("chunk_size"),
+        chunk_overlap=service_config.get("chunk_overlap")
+    )
+
+    return service_context

@@ -36,7 +36,7 @@ async def chat_completion(
         chat_llm_completion.text,
         chat_llm_completion.system,
         messages_similarity,
-        chat_llm_completion.configuration.dict(),
+        chat_llm_completion.config.dict(),
         log_user
     )
 
