@@ -5,7 +5,7 @@ from llama_index import StorageContext, load_index_from_storage
 from gateway_llms.app.interfaces.rag import RagConfig, RagQuery
 
 from gateway_llms.app.utils.logs import LogApplication, log_function
-from gateway_llms.app.modules.models.api_gemini import get_service_context
+from gateway_llms.app.modules.models import api_gemini, api_huggingface
 
 
 PATH_DATA_DOCUMENTS = "gateway_llms/app/data/documents/"
@@ -26,7 +26,14 @@ def save_file(file: UploadFile, log_user: LogApplication):
 
 @log_function
 async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user: LogApplication):
-    service_context = get_service_context("", rag_config, log_user)
+    if "gemini" in rag_config.model_name.lower():
+        service_context = api_gemini.get_service_context(
+            "", rag_config, log_user
+        )
+    else:
+        service_context = api_huggingface.get_service_context(
+            "", rag_config, log_user
+        )
 
     documents = SimpleDirectoryReader(
         f"{PATH_DATA_DOCUMENTS}{file_name}"
@@ -43,11 +50,18 @@ async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user
 
 @log_function
 async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
-    service_context = get_service_context(
-        rag_query.system_prompt,
-        rag_query.config,
-        log_user
-    )
+    if "gemini" in rag_query.config.model_name.lower():
+        service_context = api_gemini.get_service_context(
+            rag_query.system_prompt,
+            rag_query.config,
+            log_user
+        )
+    else:
+        service_context = api_huggingface.get_service_context(
+            rag_query.system_prompt,
+            rag_query.config,
+            log_user
+        )
 
     storage_context = StorageContext.from_defaults(
         persist_dir=f"{PATH_DATA_EMBEDDINGS}{rag_query.document_name}"

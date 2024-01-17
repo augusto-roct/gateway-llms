@@ -14,6 +14,10 @@ class ChatMessages(BaseModel):
 
 
 class ChatConfig(BaseModel):
+    model_name: str = Field(
+        ...,
+        description="Nome do modelo que será utilizado"
+    )
     candidate_count: int = Field(
         1
     )
@@ -43,10 +47,6 @@ class ChatLLMCompletion(BaseModel):
         None,
         description="Prompt utilizado pelo sistema para definir o "
         "comportamento do modelo"
-    )
-    model: str = Field(
-        None,
-        description="Modelo que será utilizado na conversa"
     )
     messages: List[ChatMessages] = Field(
         None,
