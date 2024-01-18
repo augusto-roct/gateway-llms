@@ -4,6 +4,14 @@ from gateway_llms.app.interfaces.chat import ChatConfig
 
 
 class RagConfig(BaseModel):
+    chat_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para chat, que será utilizado"
+    )
+    embedding_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para embedding, que será utilizado"
+    )
     chunk_size: int = Field(
         None,
         description="Tamanho do segmento de cada vetor de indices"
@@ -20,7 +28,7 @@ class RagDocument(BaseModel):
         description="Nome do documento que será transformado em vetores de indices"
     )
     config: RagConfig = Field(
-        None,
+        ...,
         description="Configuração que será utilizada pelo modelo"
     )
 
