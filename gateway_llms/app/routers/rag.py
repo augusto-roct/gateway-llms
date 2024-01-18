@@ -21,7 +21,7 @@ async def upload_document(
 
     save_file(file, log_user)
 
-    return {"message": "Os vetores de indices forma salvos na aplicação"}
+    return {"message": "O documento foi salvo na aplicação"}
 
 
 @router.post(
@@ -35,9 +35,13 @@ async def documents_to_embeddings(
 ):
     log_user = LogApplication(request, await request.body())
 
-    await document_to_embeddings(rag_document.name, rag_document.config, log_user)
+    try:
+        await document_to_embeddings(rag_document.name, rag_document.config, log_user)
 
-    return {"message": "Os vetores de indices forma salvos na aplicação"}
+        return {"message": "Os vetores de indices forma salvos na aplicação"}
+    except Exception:
+        response.status_code = 500
+        return {"message": "Ocorreu um erro durante a execução"}
 
 
 @router.post(

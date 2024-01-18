@@ -1,7 +1,7 @@
 import os
 from llama_index import ServiceContext
 from llama_index.llms import HuggingFaceInferenceAPI
-from llama_index.embeddings import HuggingFaceInferenceAPIEmbeddings
+from llama_index.embeddings import HuggingFaceInferenceAPIEmbedding
 
 from gateway_llms.app.interfaces.chat import ChatConfig
 from gateway_llms.app.interfaces.rag import RagConfig
@@ -25,12 +25,15 @@ def get_service_context(
         service_config = config.dict()
 
     llm = HuggingFaceInferenceAPI(
-        model_name=service_config.get("model_name"),
-        token=HF_TOKEN
+        model_name=service_config.get("chat_model_name"),
+        token=HF_TOKEN,
+        parameters={
+            "temperature": generation_config.get("temperature")
+        }
     )
 
-    embed_model = HuggingFaceInferenceAPIEmbeddings(
-        model_name=service_config.get("model_name"),
+    embed_model = HuggingFaceInferenceAPIEmbedding(
+        model_name=service_config.get("embedding_model_name"),
         token=HF_TOKEN
     )
 

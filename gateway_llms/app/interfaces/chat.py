@@ -14,9 +14,13 @@ class ChatMessages(BaseModel):
 
 
 class ChatConfig(BaseModel):
-    model_name: str = Field(
+    chat_model_name: str = Field(
         ...,
-        description="Nome do modelo que será utilizado"
+        description="Nome do modelo, para chat, que será utilizado"
+    )
+    embedding_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para embedding, que será utilizado"
     )
     candidate_count: int = Field(
         1
