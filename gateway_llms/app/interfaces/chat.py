@@ -2,6 +2,25 @@ from typing import Iterable, List
 from pydantic import BaseModel, Field
 
 
+class SafetySettings(BaseModel):
+    HARM_CATEGORY_HARASSMENT: str = Field(
+        "BLOCK_NONE",
+        description="Configuração para respostas de assédio"
+    )
+    HARM_CATEGORY_HATE_SPEECH: str = Field(
+        "BLOCK_NONE",
+        description="Configuração para respostas de discurso de ódio"
+    )
+    HARM_CATEGORY_SEXUALLY_EXPLICIT: str = Field(
+        "BLOCK_NONE",
+        description="Configuração para respostas com conteúdo sexualmente explícito"
+    )
+    HARM_CATEGORY_DANGEROUS_CONTENT: str = Field(
+        "BLOCK_NONE",
+        description="Configuração para respostas com conteúdos perigosos"
+    )
+
+
 class ChatMessages(BaseModel):
     role: str = Field(
         ...,
@@ -14,14 +33,6 @@ class ChatMessages(BaseModel):
 
 
 class ChatConfig(BaseModel):
-    chat_model_name: str = Field(
-        ...,
-        description="Nome do modelo, para chat, que será utilizado"
-    )
-    embedding_model_name: str = Field(
-        ...,
-        description="Nome do modelo, para embedding, que será utilizado"
-    )
     candidate_count: int = Field(
         1
     )
@@ -32,7 +43,7 @@ class ChatConfig(BaseModel):
         None
     )
     temperature: float = Field(
-        None
+        0.3
     )
     top_p: float = Field(
         None
@@ -60,7 +71,11 @@ class ChatLLMCompletion(BaseModel):
         None,
         description="Parâmetros utilizados no prompt"
     )
-    config: ChatConfig = Field(
-        None,
+    generation_config: ChatConfig = Field(
+        ...,
         description="Configuração que será utilizada pelo modelo"
+    )
+    safety_settings: SafetySettings = Field(
+        ...,
+        description="Configuração para respostas apropiadas"
     )

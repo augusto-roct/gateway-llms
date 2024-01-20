@@ -1,10 +1,7 @@
-import asyncio
-from gateway_llms.app.interfaces.chat import ChatConfig
 from gateway_llms.app.modules.extractors import get_keywords, get_questions_answered, get_summary, get_title
 from gateway_llms.app.modules.models import api_gemini, api_huggingface
 from gateway_llms.app.utils.logs import LogApplication, log_function
-from gateway_llms.app.interfaces.rag import RagConfig, RagQuery
-import concurrent.futures
+from gateway_llms.app.interfaces.rag import RagDocument, RagQuery
 import zipfile
 from fastapi import UploadFile
 from llama_index import ServiceContext, VectorStoreIndex, SimpleDirectoryReader
@@ -27,15 +24,15 @@ extractors = {
 
 @log_function
 def get_service_context(
-    system_prompt: str | None,
-    config: RagConfig | ChatConfig,
+    config: RagDocument | RagQuery,
     log_user: LogApplication
 ):
     config = config.dict()
 
     if "gemini" in config.get("chat_model_name").lower():
         llm = api_gemini.get_chat_model(
-            config,
+            config.get("generation_config"),
+            config.get("safety_settings"),
             log_user
         )
     else:
@@ -56,37 +53,40 @@ def get_service_context(
 
     transformations = []
 
-    if config.get("extractors"):
-        for key, value in config.get("extractors").items():
-            if value.get("is_use"):
-                quantity = value.get("quantity")
-                types = value.get("types")
+    if config.get("config"):
+        chunk_size = config["config"].get("chunk_size")
+        chunk_overlap = config["config"].get("chunk_overlap")
 
-                data = quantity if quantity else types
+        if config["config"].get("extractors"):
+            for key, value in config["config"].get("extractors").items():
+                if value.get("is_use"):
+                    quantity = value.get("quantity")
+                    types = value.get("types")
 
-                transformations.append(extractors[key](llm, data))
+                    data = quantity if quantity else types
 
-    if len(transformations) > 0:
-        text_splitter = TokenTextSplitter(
-            separator="\n", chunk_size=config.get("chunk_size"), chunk_overlap=config.get("chunk_overlap")
-        )
+                    transformations.append(extractors[key](llm, data))
 
-        transformations.insert(0, text_splitter)
+        if len(transformations) > 0:
+            text_splitter = TokenTextSplitter(
+                separator="\n", chunk_size=config["config"].get("chunk_size"), chunk_overlap=config["config"].get("chunk_overlap")
+            )
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        future = executor.submit(
-            ServiceContext.from_defaults,
-            llm=llm,
-            embed_model=embed_model,
-            system_prompt=system_prompt,
-            chunk_size=config.get("chunk_size"),
-            chunk_overlap=config.get("chunk_overlap"),
-            transformations=transformations
-        )
+            transformations.insert(0, text_splitter)
+    else:
+        chunk_size = None
+        chunk_overlap = None
 
-        service_context = future.result(None)
+    service_context = ServiceContext.from_defaults(
+        llm=llm,
+        embed_model=embed_model,
+        system_prompt=config.get("system_prompt"),
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        transformations=transformations
+    )
 
-        return service_context
+    return service_context
 
 
 @log_function
@@ -102,10 +102,11 @@ def save_file(file: UploadFile, log_user: LogApplication):
 
 
 @log_function
-async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user: LogApplication):
+async def document_to_embeddings(rag_document: RagDocument, log_user: LogApplication):
+    file_name = rag_document.name
+
     service_context = get_service_context(
-        "",
-        rag_config,
+        rag_document,
         log_user
     )
 
@@ -129,8 +130,7 @@ async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user
 @log_function
 async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
     service_context = get_service_context(
-        rag_query.system_prompt,
-        rag_query.config,
+        rag_query,
         log_user
     )
 

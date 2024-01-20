@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from gateway_llms.app.interfaces.chat import ChatConfig
+from gateway_llms.app.interfaces.chat import ChatConfig, SafetySettings
 
 
 class TitleExtractor(BaseModel):
@@ -67,14 +67,6 @@ class RagExtractors(BaseModel):
 
 
 class RagConfig(BaseModel):
-    chat_model_name: str = Field(
-        ...,
-        description="Nome do modelo, para chat, que será utilizado"
-    )
-    embedding_model_name: str = Field(
-        ...,
-        description="Nome do modelo, para embedding, que será utilizado"
-    )
     chunk_size: int = Field(
         None,
         description="Tamanho do segmento de cada vetor de indices"
@@ -94,9 +86,25 @@ class RagDocument(BaseModel):
         None,
         description="Nome do documento que será transformado em vetores de indices"
     )
+    chat_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para chat, que será utilizado"
+    )
+    embedding_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para embedding, que será utilizado"
+    )
     config: RagConfig = Field(
         ...,
-        description="Configuração que será utilizada pelo modelo"
+        description="Configuração que será utilizada pelo modelo para RAG"
+    )
+    generation_config: ChatConfig = Field(
+        ...,
+        description="Configuração que será utilizada pelo modelo para Chat"
+    )
+    safety_settings: SafetySettings = Field(
+        ...,
+        description="Configuração para respostas apropiadas"
     )
 
 
@@ -114,7 +122,19 @@ class RagQuery(BaseModel):
         description="Prompt utilizado pelo sistema para definir o "
         "comportamento do modelo"
     )
-    config: ChatConfig = Field(
-        None,
+    chat_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para chat, que será utilizado"
+    )
+    embedding_model_name: str = Field(
+        ...,
+        description="Nome do modelo, para embedding, que será utilizado"
+    )
+    generation_config: ChatConfig = Field(
+        ...,
         description="Configuração que será utilizada pelo modelo"
+    )
+    safety_settings: SafetySettings = Field(
+        ...,
+        description="Configuração para respostas apropiadas"
     )

@@ -1,7 +1,7 @@
 import os
 from starlette.concurrency import run_in_threadpool
 import google.generativeai as genai
-from llama_index.llms import Gemini
+from llama_index.llms.gemini import Gemini
 from llama_index.embeddings import GooglePaLMEmbedding
 
 from gateway_llms.app.utils.logs import LogApplication, log_function
@@ -29,7 +29,8 @@ async def gemini_chat_completion(
     message: str,
     system: str,
     history: list,
-    config: dict,
+    generation_config: dict,
+    safety_settings: dict,
     log_user: LogApplication
 ):
     model = genai.GenerativeModel('gemini-pro')
@@ -37,13 +38,14 @@ async def gemini_chat_completion(
     history.insert(0, {"role": "user", "content": "Quem é você?"})
     history.insert(1, {"role": "assistant", "content": system})
 
-    chat_history = await transform_history(history)
+    chat_history = await transform_history(history, log_user)
 
     chat = model.start_chat(history=chat_history)
 
     response = await chat.send_message_async(
         message,
-        generation_config=config
+        generation_config=generation_config,
+        safety_settings=safety_settings
     )
 
     return response.text
@@ -69,12 +71,12 @@ def get_embbeding_model(log_user: LogApplication):
 
     return GooglePaLMEmbedding(
         model_name=model_name,
-        api_key=GOOGLE_API_KEY
+        api_key=GOOGLE_API_KEY,
     )
 
 
 @log_function
-def get_chat_model(generation_config: dict, log_user: LogApplication):
+def get_chat_model(generation_config: dict, safety_settings: dict, log_user: LogApplication):
     temperature = 0.1 if not generation_config.get(
         "temperature"
     ) else generation_config.get(
@@ -85,5 +87,6 @@ def get_chat_model(generation_config: dict, log_user: LogApplication):
         GOOGLE_API_KEY,
         temperature=temperature,
         max_tokens=None,
-        generation_config=generation_config
+        generation_config=generation_config,
+        safety_settings=safety_settings
     )
