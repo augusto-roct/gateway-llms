@@ -10,7 +10,7 @@ HF_TOKEN = os.getenv("HUGGING_FACE_TOKEN")
 
 @log_function
 def get_chat_model(config: dict, log_user: LogApplication):
-    temperature = 0.1 if not config.get(
+    temperature = 0.1 if not config["generation_config"].get(
         "temperature"
     ) else config.get(
         "temperature"

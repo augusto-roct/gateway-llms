@@ -1,11 +1,12 @@
-from gateway_llms.app.interfaces.chat import ChatConfig
+from gateway_llms.app.modules.extractors import get_keywords, get_questions_answered, get_summary, get_title
 from gateway_llms.app.modules.models import api_gemini, api_huggingface
 from gateway_llms.app.utils.logs import LogApplication, log_function
-from gateway_llms.app.interfaces.rag import RagConfig, RagQuery
+from gateway_llms.app.interfaces.rag import RagDocument, RagQuery
 import zipfile
 from fastapi import UploadFile
 from llama_index import ServiceContext, VectorStoreIndex, SimpleDirectoryReader
 from llama_index import StorageContext, load_index_from_storage
+from llama_index.text_splitter import TokenTextSplitter
 import nest_asyncio
 nest_asyncio.apply()
 
@@ -13,17 +14,25 @@ nest_asyncio.apply()
 PATH_DATA_DOCUMENTS = "gateway_llms/app/data/documents/"
 PATH_DATA_EMBEDDINGS = "gateway_llms/app/data/embeddings/"
 
+extractors = {
+    "title": get_title,
+    "questions": get_questions_answered,
+    "keywords": get_keywords,
+    "summary": get_summary
+}
+
 
 @log_function
 def get_service_context(
-    system_prompt: str | None,
-    config: RagConfig | ChatConfig,
+    config: RagDocument | RagQuery,
     log_user: LogApplication
 ):
     config = config.dict()
+
     if "gemini" in config.get("chat_model_name").lower():
         llm = api_gemini.get_chat_model(
-            config,
+            config.get("generation_config"),
+            config.get("safety_settings"),
             log_user
         )
     else:
@@ -42,12 +51,39 @@ def get_service_context(
             log_user
         )
 
+    transformations = []
+
+    if config.get("config"):
+        chunk_size = config["config"].get("chunk_size")
+        chunk_overlap = config["config"].get("chunk_overlap")
+
+        if config["config"].get("extractors"):
+            for key, value in config["config"].get("extractors").items():
+                if value.get("is_use"):
+                    quantity = value.get("quantity")
+                    types = value.get("types")
+
+                    data = quantity if quantity else types
+
+                    transformations.append(extractors[key](llm, data))
+
+        if len(transformations) > 0:
+            text_splitter = TokenTextSplitter(
+                separator="\n", chunk_size=config["config"].get("chunk_size"), chunk_overlap=config["config"].get("chunk_overlap")
+            )
+
+            transformations.insert(0, text_splitter)
+    else:
+        chunk_size = None
+        chunk_overlap = None
+
     service_context = ServiceContext.from_defaults(
         llm=llm,
         embed_model=embed_model,
-        system_prompt=system_prompt,
-        chunk_size=config.get("chunk_size"),
-        chunk_overlap=config.get("chunk_overlap")
+        system_prompt=config.get("system_prompt"),
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        transformations=transformations
     )
 
     return service_context
@@ -66,10 +102,11 @@ def save_file(file: UploadFile, log_user: LogApplication):
 
 
 @log_function
-async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user: LogApplication):
+async def document_to_embeddings(rag_document: RagDocument, log_user: LogApplication):
+    file_name = rag_document.name
+
     service_context = get_service_context(
-        "",
-        rag_config,
+        rag_document,
         log_user
     )
 
@@ -81,7 +118,8 @@ async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user
         index = VectorStoreIndex.from_documents(
             documents, service_context=service_context
         )
-    except Exception:
+    except Exception as exception:
+        print(exception)
         raise ValueError()
 
     index.storage_context.persist(
@@ -92,8 +130,7 @@ async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user
 @log_function
 async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
     service_context = get_service_context(
-        rag_query.system_prompt,
-        rag_query.config,
+        rag_query,
         log_user
     )
 
