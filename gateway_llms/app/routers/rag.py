@@ -36,10 +36,12 @@ async def documents_to_embeddings(
     log_user = LogApplication(request, await request.body())
 
     try:
-        await document_to_embeddings(rag_document.name, rag_document.config, log_user)
+        await document_to_embeddings(
+            rag_document.name, rag_document.config, log_user)
 
         return {"message": "Os vetores de indices forma salvos na aplicação"}
-    except Exception:
+    except Exception as exception:
+        print(exception)
         response.status_code = 500
         return {"message": "Ocorreu um erro durante a execução"}
 

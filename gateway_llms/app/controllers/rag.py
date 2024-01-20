@@ -1,17 +1,28 @@
+import asyncio
 from gateway_llms.app.interfaces.chat import ChatConfig
+from gateway_llms.app.modules.extractors import get_keywords, get_questions_answered, get_summary, get_title
 from gateway_llms.app.modules.models import api_gemini, api_huggingface
 from gateway_llms.app.utils.logs import LogApplication, log_function
 from gateway_llms.app.interfaces.rag import RagConfig, RagQuery
+import concurrent.futures
 import zipfile
 from fastapi import UploadFile
 from llama_index import ServiceContext, VectorStoreIndex, SimpleDirectoryReader
 from llama_index import StorageContext, load_index_from_storage
+from llama_index.text_splitter import TokenTextSplitter
 import nest_asyncio
 nest_asyncio.apply()
 
 
 PATH_DATA_DOCUMENTS = "gateway_llms/app/data/documents/"
 PATH_DATA_EMBEDDINGS = "gateway_llms/app/data/embeddings/"
+
+extractors = {
+    "title": get_title,
+    "questions": get_questions_answered,
+    "keywords": get_keywords,
+    "summary": get_summary
+}
 
 
 @log_function
@@ -21,6 +32,7 @@ def get_service_context(
     log_user: LogApplication
 ):
     config = config.dict()
+
     if "gemini" in config.get("chat_model_name").lower():
         llm = api_gemini.get_chat_model(
             config,
@@ -42,15 +54,39 @@ def get_service_context(
             log_user
         )
 
-    service_context = ServiceContext.from_defaults(
-        llm=llm,
-        embed_model=embed_model,
-        system_prompt=system_prompt,
-        chunk_size=config.get("chunk_size"),
-        chunk_overlap=config.get("chunk_overlap")
-    )
+    transformations = []
 
-    return service_context
+    if config.get("extractors"):
+        for key, value in config.get("extractors").items():
+            if value.get("is_use"):
+                quantity = value.get("quantity")
+                types = value.get("types")
+
+                data = quantity if quantity else types
+
+                transformations.append(extractors[key](llm, data))
+
+    if len(transformations) > 0:
+        text_splitter = TokenTextSplitter(
+            separator="\n", chunk_size=config.get("chunk_size"), chunk_overlap=config.get("chunk_overlap")
+        )
+
+        transformations.insert(0, text_splitter)
+
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        future = executor.submit(
+            ServiceContext.from_defaults,
+            llm=llm,
+            embed_model=embed_model,
+            system_prompt=system_prompt,
+            chunk_size=config.get("chunk_size"),
+            chunk_overlap=config.get("chunk_overlap"),
+            transformations=transformations
+        )
+
+        service_context = future.result(None)
+
+        return service_context
 
 
 @log_function
@@ -81,7 +117,8 @@ async def document_to_embeddings(file_name: str, rag_config: RagConfig, log_user
         index = VectorStoreIndex.from_documents(
             documents, service_context=service_context
         )
-    except Exception:
+    except Exception as exception:
+        print(exception)
         raise ValueError()
 
     index.storage_context.persist(
