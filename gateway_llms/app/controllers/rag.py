@@ -1,4 +1,5 @@
 from gateway_llms.app.modules.extractors import get_keywords, get_questions_answered, get_summary, get_title
+from gateway_llms.app.modules import postprocessors
 from gateway_llms.app.modules.models import api_gemini, api_huggingface
 from gateway_llms.app.utils.logs import LogApplication, log_function
 from gateway_llms.app.interfaces.rag import RagDocument, RagQuery
@@ -19,6 +20,22 @@ extractors = {
     "questions": get_questions_answered,
     "keywords": get_keywords,
     "summary": get_summary
+}
+
+methods_postprocessors = {
+    "similarity": postprocessors.get_similarity,
+    "keyword": postprocessors.get_keyword,
+    "metadata_replacement": postprocessors.get_metadata_replacement,
+    "log_context_reorder": postprocessors.get_log_context_reorder,
+    "sentence_embedding_optimizer": postprocessors.get_sentence_embedding_optimizer,
+    "sentence_transformer_rerank": postprocessors.get_sentence_transformer_rerank,
+    "llm_rerank": postprocessors.get_llm_rerank,
+    "fix_recency": postprocessors.get_fix_recency,
+    "embedding_recency": postprocessors.get_embedding_recency,
+    "time_weight": postprocessors.get_time_weight,
+    "prev_next_node": postprocessors.get_prev_next_node,
+    "auto_prev_next_node": postprocessors.get_auto_prev_next_node,
+    "rank_gpt_rerank": postprocessors.get_rank_gpt_rerank
 }
 
 
@@ -86,7 +103,7 @@ def get_service_context(
         transformations=transformations
     )
 
-    return service_context
+    return service_context, llm, embed_model
 
 
 @log_function
@@ -105,7 +122,7 @@ def save_file(file: UploadFile, log_user: LogApplication):
 async def document_to_embeddings(rag_document: RagDocument, log_user: LogApplication):
     file_name = rag_document.name
 
-    service_context = get_service_context(
+    service_context, _, _ = get_service_context(
         rag_document,
         log_user
     )
@@ -129,7 +146,7 @@ async def document_to_embeddings(rag_document: RagDocument, log_user: LogApplica
 
 @log_function
 async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
-    service_context = get_service_context(
+    service_context, llm, embed_model = get_service_context(
         rag_query,
         log_user
     )
@@ -143,7 +160,26 @@ async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
         service_context=service_context
     )
 
-    query_engine = index.as_query_engine()
+    node_postprocessors = []
+
+    config = rag_query.node_postprocessors.dict()
+
+    for key, value in config.items():
+        if value.get("is_use"):
+            value.update({"service_context": service_context})
+            value.update({"index": index})
+            value.update({"llm": llm})
+            value.update({"embed_model": embed_model})
+
+            if key == "log_context_reorder":
+                data = methods_postprocessors[key]()
+            else:
+                data = methods_postprocessors[key](value)
+
+            node_postprocessors.append(data)
+
+    query_engine = index.as_query_engine(
+        node_postprocessors=node_postprocessors)
     response = query_engine.query(rag_query.text)
 
     return {"message": response.response}

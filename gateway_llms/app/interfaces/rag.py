@@ -3,6 +3,228 @@ from pydantic import BaseModel, Field
 from gateway_llms.app.interfaces.chat import ChatConfig, SafetySettings
 
 
+class SimilarityPostprocessors(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar similaridade no pós-processamento"
+    )
+    similarity_cutoff: float = Field(
+        0.7,
+        description="Limiar que será utilzado"
+    )
+
+
+class KeywordPostprocessors(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar palavras-chaves no pós-processamento"
+    )
+    required_keywords: list[str] = Field(
+        [],
+        description="Lista de palavras-chaves necessárias"
+    )
+    exclude_keywords: list[str] = Field(
+        [],
+        description="Lista de palavras-chaves excluidas"
+    )
+    lang: str = Field(
+        "pt",
+        description="Linguagem utilizada"
+    )
+
+
+class MetadataReplacementPostProcessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar a substituição do conteúdo por metadado no pós-processamento"
+    )
+    target_metadata_key: str = Field(
+        "window",
+        description="Indica qual metadado será utilizado"
+    )
+
+
+class LongContextReorderPostprocessors(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve reorganizar os nós no pós-processamento"
+    )
+
+
+class SentenceEmbeddingOptimizerPostProcessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar o vetor de indices para remover frases não relevantes para pergunta no pós-processamento"
+    )
+    percentile_cutoff: float = Field(
+        0.5,
+        description="Indica qual o percentual de relevância da frase"
+    )
+    threshold_cutoff: float = Field(
+        0.7,
+        description="Limiar que será utilzado"
+    )
+
+
+class SentenceTransformerRerankPostProcessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar o vetor de indices para remover frases não relevantes para pergunta no pós-processamento"
+    )
+    top_n: int = Field(
+        3,
+        description="Número de nós a serem retornados"
+    )
+
+
+class LLMRerankPostprocessors(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar um LLM para reordenar nós solicitando que o LLM retorne "
+        "os documentos relevantes e uma pontuação de quão relevantes eles são no pós-processamento"
+    )
+    top_n: int = Field(
+        2,
+        description="Número de nós a serem retornados"
+    )
+
+
+class FixedRecencyPostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve retornar os nós K superiores classificados por data no pós-processamento"
+    )
+    tok_k: int = Field(
+        2,
+        description="Número de nós a serem retornados"
+    )
+
+
+class EmbeddingRecencyPostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve retornar os nós K superiores classificados por data e remover nós mais "
+        "antigos que são muito semelhantes no pós-processamento"
+    )
+    similarity_cutoff: float = Field(
+        0.7,
+        description="Limiar que será utilzado"
+    )
+
+
+class TimeWeightedPostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve retornar os nós K superiores aplicando uma reclassificação ponderada "
+        "pelo tempo a cada nó no pós-processamento"
+    )
+    time_decay: float = Field(
+        0.99,
+        description="Limiar que será utilzado"
+    )
+    top_k: int = Field(
+        1,
+        description="Número de nós a serem retornados"
+    )
+
+
+class PrevNextNodePostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve ler as relações de nó e buscar todos os nós que vêm anteriormente, "
+        "em seguida ou em ambos no pós-processamento"
+    )
+    num_nodes: int = Field(
+        1,
+        description="Número de nós"
+    )
+    mode: str = Field(
+        "next",
+        description="Modo a ser utilizado aceita apenas 'next', 'previous', ou 'both'"
+    )
+
+
+class AutoPrevNextNodePostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve ler as relações de nó e buscar todos os nós que vêm anteriormente, "
+        "em seguida ou em ambos (selecionado automaticamente usando o LLM) no pós-processamento"
+    )
+    num_nodes: int = Field(
+        1,
+        description="Número de nós"
+    )
+
+
+class RankGPTRerankPostprocessor(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve usar o agente RankGPT para reclassificar documentos de acordo com a relevância no pós-processamento"
+    )
+    top_n: int = Field(
+        3,
+        description="Número de nós"
+    )
+
+
+class NodePostprocessors(BaseModel):
+    similarity: SimilarityPostprocessors = Field(
+        ...,
+        description="Utiliza similaridade no pós-processamento"
+    )
+    keyword: KeywordPostprocessors = Field(
+        ...,
+        description="Utiliza palavras chaves no pós-processamento"
+    )
+    metadata_replacement: MetadataReplacementPostProcessor = Field(
+        ...,
+        description="Utiliza a substituição do conteúdo por metadado no pós-processamento"
+    )
+    log_context_reorder: LongContextReorderPostprocessors = Field(
+        ...,
+        description="Reorganiza os nós no pós-processamento"
+    )
+    sentence_embedding_optimizer: SentenceEmbeddingOptimizerPostProcessor = Field(
+        ...,
+        description="Utiliza o vetor de indices para remover frases não relevantes para pergunta"
+    )
+    sentence_transformer_rerank: SentenceTransformerRerankPostProcessor = Field(
+        ...,
+        description="Utiliza os codificadores cruzados do pacote de transformador de sentença para reordenar "
+        "nós e retorna os nós N superiores"
+    )
+    llm_rerank: LLMRerankPostprocessors = Field(
+        ...,
+        description="Utiliza um LLM para reordenar nós solicitando que o LLM retorne os documentos relevantes "
+        "e uma pontuação de quão relevantes eles são"
+    )
+    fix_recency: FixedRecencyPostprocessor = Field(
+        ...,
+        description="Utiliza os nós K superiores classificados por data"
+    )
+    embedding_recency: EmbeddingRecencyPostprocessor = Field(
+        ...,
+        description="Utiliza os nós K superiores classificados por data e remover nós mais antigos que são muito semelhantes"
+    )
+    time_weight: TimeWeightedPostprocessor = Field(
+        ...,
+        description="Utiliza os os nós K superiores aplicando uma reclassificação ponderada pelo tempo a cada nó"
+    )
+    prev_next_node: PrevNextNodePostprocessor = Field(
+        ...,
+        description="Utiliza as relações de nó e busca todos os nós que vêm anteriormente, em seguida ou em ambos"
+    )
+    auto_prev_next_node: AutoPrevNextNodePostprocessor = Field(
+        ...,
+        description="Utiliza as relações de nó e busca todos os nós que vêm anteriormente, em seguida ou em "
+        "ambos (selecionado automaticamente usando o LLM)"
+    )
+    rank_gpt_rerank: RankGPTRerankPostprocessor = Field(
+        ...,
+        description="Utiliza o agente RankGPT para reclassificar documentos de acordo com a relevância"
+    )
+
+
 class TitleExtractor(BaseModel):
     is_use: bool = Field(
         False,
@@ -133,6 +355,10 @@ class RagQuery(BaseModel):
     generation_config: ChatConfig = Field(
         ...,
         description="Configuração que será utilizada pelo modelo"
+    )
+    node_postprocessors: NodePostprocessors = Field(
+        ...,
+        description="Configuração de pós processamento que será utilizada pelo modelo"
     )
     safety_settings: SafetySettings = Field(
         ...,
