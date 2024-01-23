@@ -8,6 +8,8 @@ from fastapi import UploadFile
 from llama_index import ServiceContext, VectorStoreIndex, SimpleDirectoryReader
 from llama_index import StorageContext, load_index_from_storage
 from llama_index.text_splitter import TokenTextSplitter
+from llama_index.retrievers import BM25Retriever
+from llama_index.query_engine import RetrieverQueryEngine
 import nest_asyncio
 nest_asyncio.apply()
 
@@ -178,8 +180,22 @@ async def storage_to_query(rag_query: RagQuery, log_user: LogApplication):
 
             node_postprocessors.append(data)
 
-    query_engine = index.as_query_engine(
-        node_postprocessors=node_postprocessors)
+    if rag_query.retriever.bm25_retriever.is_use:
+        retriever = BM25Retriever.from_defaults(
+            index,
+            similarity_top_k=rag_query.retriever.bm25_retriever.similarity_top_k
+        )
+        query_engine = RetrieverQueryEngine.from_args(
+            retriever=retriever,
+            node_postprocessors=node_postprocessors,
+            service_context=service_context
+        )
+    else:
+        query_engine = index.as_query_engine(
+            node_postprocessors=node_postprocessors,
+            similarity_top_k=rag_query.similarity_top_k
+        )
+
     response = query_engine.query(rag_query.text)
 
     return {"message": response.response}
