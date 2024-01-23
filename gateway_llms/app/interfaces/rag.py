@@ -3,6 +3,24 @@ from pydantic import BaseModel, Field
 from gateway_llms.app.interfaces.chat import ChatConfig, SafetySettings
 
 
+class Bm25Retriever(BaseModel):
+    is_use: bool = Field(
+        False,
+        description="Indica se deve utilizar o algoritmo bm25"
+    )
+    similarity_top_k: int = Field(
+        5,
+        description="Número de nós a serem utilizados"
+    )
+
+
+class RagRetriever(BaseModel):
+    bm25_retriever: Bm25Retriever = Field(
+        ...,
+        description="Utiliza o algoritmo bm25"
+    )
+
+
 class SimilarityPostprocessors(BaseModel):
     is_use: bool = Field(
         False,
@@ -355,6 +373,14 @@ class RagQuery(BaseModel):
     generation_config: ChatConfig = Field(
         ...,
         description="Configuração que será utilizada pelo modelo"
+    )
+    similarity_top_k: int = Field(
+        3,
+        description="Número de nós que serão utilizados"
+    )
+    retriever: RagRetriever = Field(
+        ...,
+        description="Configuração para recuperação de documentos"
     )
     node_postprocessors: NodePostprocessors = Field(
         ...,
