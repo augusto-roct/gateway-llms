@@ -29,7 +29,9 @@ async def chat_completion(
 
     if chat_llm_completion.parameters:
         for key in chat_llm_completion.parameters:
-            chat_llm_completion.text.replace(
+            chat_llm_completion.system = chat_llm_completion.system.replace(
+                "{{" + key + "}}", chat_llm_completion.parameters.get(key))
+            chat_llm_completion.text = chat_llm_completion.text.replace(
                 "{{" + key + "}}", chat_llm_completion.parameters.get(key))
 
     content = await gemini_chat_completion(

@@ -24,7 +24,7 @@ async def get_similarity_messages_historical(
     del messages_assistant
 
     similarity = np.dot(embeddings_user, embeddings_assistant.T)
-    sort_similarity = np.argsort(similarity)[:5]
+    sort_similarity = np.argsort(similarity)[:10]
 
     del embeddings_assistant
     del embeddings_user
